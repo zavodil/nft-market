@@ -21,6 +21,10 @@ body {
         0 0 64px rgba(0, 0, 0, 0.1);
 }
 
+canvas {
+    border: 2px solid #eee;
+}
+
 @media only screen and (min-width: $width) {
     body {
         border-left: 2px solid #ddd;

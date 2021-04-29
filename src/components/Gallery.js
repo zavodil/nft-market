@@ -187,6 +187,60 @@ export const Gallery = ({ app, update, contractAccount, account, loading }) => {
 	market.sort(sortFunctions[sort]);
 	tokens.sort(sortFunctions[sort]);
 
+
+	const displayMedia = (media, token_id) => {
+		const avatar = media.split('avatar:')[1]
+		if (avatar) {
+			
+			const el = <canvas id={token_id} width="400" height="400"></canvas>
+
+			setTimeout(() => {
+				const canvas = document.querySelector('#' + token_id)
+				const ctx = canvas.getContext('2d')
+
+				const [r1, r2] = avatar.split(',')
+					// const seed1 = encoded
+
+				const arr = []
+				
+				const line = (x, y, x2, y2) => {
+					ctx.beginPath()
+					ctx.moveTo(x, y);
+					ctx.lineTo(x2, y2);
+					ctx.stroke();
+				}
+				function draw() {
+					ctx.fillStyle = 'PEACHPUFF';
+					ctx.strokeStyle = 'black';
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
+					const step = 30
+
+					for (var x = 0; x < 400; x = x + step) {
+						for (var y = 0; y < 400; y = y + step) {
+
+							ctx.lineWidth = r2 * Math.abs(Math.sin(r1 * x + r1 * y)) * 20
+
+							if(r1 * Math.abs(Math.sin(x + y) + Math.cos(r1 * x + r2 * y)) * 2 > 0.5) {
+								line(x,y,x+step,y+step);
+								
+							} else {
+								line(x+step,y,x,y+step);	
+							}
+						}
+					}
+				}
+
+				draw()
+				
+			}, 1000)
+
+			return el
+		} else {
+			return <img src={media} />
+		}
+		
+	}
+
 	return <>
 		{
 			tab < 3 && 
@@ -210,7 +264,7 @@ export const Gallery = ({ app, update, contractAccount, account, loading }) => {
 				royalty = {}
 			}) =>
 				<div key={token_id} className="item">
-					<img src={media} />
+					{ displayMedia( media, token_id ) }
 					<p>{accountId !== owner_id ? `Owned by ${formatAccountId(owner_id)}` : `You own this!`}</p>
 					{ Object.keys(conditions).length > 0 && <>
 						<h4>Royalties</h4>
