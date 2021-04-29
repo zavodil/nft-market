@@ -10,6 +10,9 @@ $margin-fix: -16px;
 html {
     overflow: hidden;
 }
+canvas {
+    border: 2px solid #ddd;
+}
 body {
     margin: 0 auto;
     width: 100vw;

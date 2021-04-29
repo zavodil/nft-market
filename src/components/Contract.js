@@ -14,15 +14,69 @@ const {
 export const Contract = ({ near, update, account }) => {
 	if (!account) return <p>Please connect your NEAR Wallet</p>;
 
+	const [drawing, setDrawing] = useState([]);
 	const [media, setMedia] = useState('');
 	const [validMedia, setValidMedia] = useState('');
 	const [royalties, setRoyalties] = useState({});
 	const [royalty, setRoyalty] = useState([]);
 	const [receiver, setReceiver] = useState([]);
 
+	useEffect(() => {
+		// drawing all happens here
+		const canvas = document.querySelector('#canvas')
+		const ctx = canvas.getContext("2d");
+
+		const offsetY = -canvas.getBoundingClientRect().y
+		const offsetX = -canvas.getBoundingClientRect().x
+		let arr = []
+		let d, x, y, px, py
+		let isMouseDown = false
+
+		window.clearDrawing = () => arr = []
+		window.onmousedown = (e) => {
+			x = px = Math.floor(offsetX + e.clientX)
+			y = py = Math.floor(offsetY + e.clientY)
+			if (x < 0 || x > 400 || y < 0 || y > 400) return
+			isMouseDown = true
+			arr.push([x, y])
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+		}
+		window.onmouseup = (e) => {
+			isMouseDown = false
+			arr.push([-1, -1])
+			setDrawing(drawing.concat(arr))
+		}
+		window.onmousemove = (e) => {
+			if (!isMouseDown) return
+			x = Math.floor(offsetX + e.clientX)
+			y = Math.floor(offsetY + e.clientY)
+			d = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2))
+			if (d > 20) {
+				px = x
+				py = y
+				arr.push([x, y])
+				ctx.lineTo(x, y);
+				ctx.stroke();
+			}
+		}
+		return () => {
+			window.onmousemove = window.onmouseup = window.onmousedown = null
+		}
+		
+	}, [])
+
+	const handleClear = () => {
+		const canvas = document.querySelector('#canvas')
+		const ctx = canvas.getContext("2d");
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		setDrawing([])
+		window.clearDrawing()
+	}
+
 	const handleMint = async () => {
-		if (!media.length || !validMedia) {
-			alert('Please enter a valid Image Link. You should see a preview below!');
+		if (!drawing.length) {
+			alert('Please draw something above');
 			return;
 		}
 
@@ -36,7 +90,7 @@ export const Contract = ({ near, update, account }) => {
 		
 		update('loading', true);
 		const metadata = { 
-			media,
+			media: 'drawing:' + drawing.toString(),
 			issued_at: Date.now().toString()
 		};
 		const deposit = parseNearAmount('0.1');
@@ -51,11 +105,11 @@ export const Contract = ({ near, update, account }) => {
 	};
 
 	return <>
-		<h4>Mint Something</h4>
-		<input className="full-width" placeholder="Image Link" value={media} onChange={(e) => setMedia(e.target.value)} />
-		<img src={media} onLoad={() => setValidMedia(true)} onError={() => setValidMedia(false)} />
+		<h4>Draw Something</h4>
+
+		<canvas id="canvas" width="400" height="400"></canvas>
 		
-		{ !validMedia && <p>Image link is invalid.</p> }
+		<button onClick={() => handleClear()}>Clear</button>
 		
 		<h4>Royalties</h4>
 		{

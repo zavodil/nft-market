@@ -187,6 +187,33 @@ export const Gallery = ({ app, update, contractAccount, account, loading }) => {
 	market.sort(sortFunctions[sort]);
 	tokens.sort(sortFunctions[sort]);
 
+
+	const displayMedia = (token_id, media) => {
+		
+		const drawing = media.split('drawing:')[1]
+		if (drawing) {
+			const el = <canvas id={token_id} width="400" height="400"></canvas>
+			setTimeout(() => {
+				const canvas = document.querySelector('#' + token_id)
+				const ctx = canvas.getContext("2d");
+				ctx.beginPath();
+				const arr = drawing.split(',').map((n) => parseInt(n))
+				ctx.moveTo(arr[0], arr[1]);
+				for (let i = 0; i < arr.length; i += 2) {
+					if (arr[i] === -1 && arr[i+2]) {
+						ctx.beginPath();
+						ctx.moveTo(arr[i+2], arr[i+3]);
+						continue
+					}
+					ctx.lineTo(arr[i], arr[i+1]);
+					ctx.stroke();
+				}
+			}, 500)
+			return el
+		}
+		return <img src={media} />
+	}
+
 	return <>
 		{
 			tab < 3 && 
@@ -210,7 +237,7 @@ export const Gallery = ({ app, update, contractAccount, account, loading }) => {
 				royalty = {}
 			}) =>
 				<div key={token_id} className="item">
-					<img src={media} />
+					{ displayMedia(token_id, media) }
 					<p>{accountId !== owner_id ? `Owned by ${formatAccountId(owner_id)}` : `You own this!`}</p>
 					{ Object.keys(conditions).length > 0 && <>
 						<h4>Royalties</h4>
@@ -274,7 +301,7 @@ export const Gallery = ({ app, update, contractAccount, account, loading }) => {
 						bids = {},
 						royalty = {}
 					}) => <div key={token_id} className="item">
-						<img src={media} />
+						{ displayMedia(token_id, media) }
 						{
 							storage ? <>
 								<h4>Royalties</h4>
