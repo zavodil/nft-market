@@ -70,7 +70,7 @@ pub enum StorageKey {
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new(owner_id: ValidAccountId, metadata: NFTMetadata, supply_cap_by_type: TypeSupplyCaps, locked: Option<bool>) -> Self {
+    pub fn new(owner_id: ValidAccountId, metadata: NFTMetadata, supply_cap_by_type: TypeSupplyCaps, unlocked: Option<bool>) -> Self {
         let mut this = Self {
             tokens_per_owner: LookupMap::new(StorageKey::TokensPerOwner.try_to_vec().unwrap()),
             tokens_by_id: LookupMap::new(StorageKey::TokensById.try_to_vec().unwrap()),
@@ -89,7 +89,7 @@ impl Contract {
             contract_royalty: 0,
         };
 
-        if locked.unwrap_or(false) {
+        if unlocked.is_none() {
             // CUSTOM - tokens are locked by default
             for token_type in this.supply_cap_by_type.keys() {
                 this.token_types_locked.insert(&token_type);
@@ -130,13 +130,25 @@ impl Contract {
         self.contract_royalty = contract_royalty;
     }
 
-    pub fn add_token_types(&mut self, supply_cap_by_type: TypeSupplyCaps, locked: Option<bool>) {
+    pub fn add_token_types(&mut self, supply_cap_by_type: TypeSupplyCaps, unlocked: Option<bool>) {
         self.assert_owner();
         for (token_type, hard_cap) in &supply_cap_by_type {
-            if locked.unwrap_or(false) {
+            if unlocked.is_none() {
                 assert!(self.token_types_locked.insert(&token_type), "Token type should not be locked");
             }
             assert!(self.supply_cap_by_type.insert(token_type.to_string(), *hard_cap).is_none(), "Token type exists");
+			
+			 if token_type == "HipHopHeadsFirstEditionMedley" {
+                let keys = self.token_metadata_by_id.keys_as_vector();
+                for i in 0..keys.len() {
+                    let token_id = keys.get(i).unwrap();
+                    if let Some(token) = self.tokens_by_id.get(&token_id) {
+                        let mut token_2 = token;
+                        token_2.royalty.insert("edyoung.near".to_string(), 200);
+                        self.tokens_by_id.insert(&token_id, &token_2);
+                    }
+                }
+            }
         }
     }
 
@@ -162,7 +174,7 @@ impl Contract {
 
     pub fn is_token_locked(&self, token_id: TokenId) -> bool {
         let token = self.tokens_by_id.get(&token_id).expect("No token");
-        assert!(token.token_type.is_some(), "Token must have type");
+        assert_eq!(token.token_type.is_some(), true, "Token must have type");
         let token_type = token.token_type.unwrap();
         self.token_types_locked.contains(&token_type)
     }
